@@ -2,34 +2,28 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-def color_and_grad_binary(img, s_thresh=(0,255), l_thresh=(0,255), sx_thresh=(20,100), draw_intermidiate=False):
+def color_and_grad_binary(img, b_thresh=(0,255), l_thresh=(0,255), draw_intermidiate=False):
     img = np.copy(img)
     # Convert to HLS color space and separate the channels
     hls = cv2.cvtColor(img, cv2.COLOR_BGR2HLS)
     l_channel = hls[:,:,1]
-    s_channel = hls[:,:,2]
     
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Sobel x
-    sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0) # Take the derivative in x
-    abs_sobelx = np.absolute(sobelx) # Absolute x derivative to accentuate lines away from horizontal
-    scaled_sobel = np.uint8(255*abs_sobelx/np.max(abs_sobelx))
+    # Convert to LAB color space and separate the channels
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    b_channel = lab[:,:,2]
     
-    # Threshold x gradient
-    sxbinary = np.zeros_like(scaled_sobel)
-    sxbinary[(scaled_sobel >= sx_thresh[0]) & (scaled_sobel <= sx_thresh[1])] = 1
+    # Threshold blue channel - this channel is used to mask shaded areas
+    b_binary = np.zeros_like(b_channel)
+    b_binary[(b_channel >= b_thresh[0]) & (b_channel <= b_thresh[1])] = 1
     
-    # Threshold saturation channel
-    s_binary = np.zeros_like(s_channel)
-    s_binary[(s_channel >= s_thresh[0]) & (s_channel <= s_thresh[1])] = 1
     
     # Threshold light channel - this channel is used to mask shaded areas
     l_binary = np.zeros_like(l_channel)
     l_binary[(l_channel >= l_thresh[0]) & (l_channel <= l_thresh[1])] = 1
     
     # combine the thresholds with "or"
-    binary = np.zeros_like(s_channel)
-    binary[((s_binary == 1) | (sxbinary == 1)) & (l_binary == 1)]  = 1
+    binary = np.zeros_like(l_channel)
+    binary[(b_binary == 1) | (l_binary == 1)]  = 1
     
     if draw_intermidiate:    
             # Plot the result
@@ -45,7 +39,7 @@ def color_and_grad_binary(img, s_thresh=(0,255), l_thresh=(0,255), sx_thresh=(20
         plt.savefig('output_images/binary_image.png')
     return binary
 
-def set_percpective_transform(img=None, draw_intermidiate=False):
+def set_percpective_transform(img=None, draw_intermidiate=True):
     '''
     a function that returns the lane lines percpective transform matrixes
     '''
@@ -223,7 +217,7 @@ def curv_calc_from_previous(warped, left_fit, right_fit, draw_intermidiate=False
     # HYPERPARAMETER
     # Choose the width of the margin around the previous polynomial to search
     # The quiz grader expects 100 here, but feel free to tune on your own!
-    margin = 100
+    margin = 60
 
     # Grab activated pixels
     nonzero = warped.nonzero()

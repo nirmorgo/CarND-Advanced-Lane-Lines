@@ -116,7 +116,7 @@ def video_frame_pipeline(img):
     # step7 - caculate the offset and curvature in real world units ([m])
     out = measure_curvature_and_offset(lines_img, left_fit_cr, right_fit_cr)
     return out
-
+#%%
 video_output = 'output_images/projectVideo.mp4'
 
 clip1 = VideoFileClip("project_video.mp4")

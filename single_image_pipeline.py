@@ -13,25 +13,16 @@ M, Minv = set_percpective_transform(img=cv2.imread('test_images/straight_lines1.
 
 #%% read all test images
 images = glob.glob('test_images/*.jpg')
-a = []
+a=[]
 for img in images:
     img = cv2.imread(img)
     img = cv2.undistort(img, cal_values['mtx'], cal_values['dist'], None, cal_values['mtx'])
-    binary = color_and_grad_binary(img, s_thresh=(150,255), l_thresh=(50,255), sx_thresh=(100,255), draw_intermidiate=False)
+    binary = color_and_grad_binary(img, b_thresh=(160,255), l_thresh=(240,255), draw_intermidiate=True)
     warped = warp_image(binary, M, draw_intermidiate=False)
-    warped = warped[100:,:] # mask the top part of the binary mask
+    warped = warped[70:,:] # mask the top part of the binary mask
     left_fit, right_fit, left_fit_cr, right_fit_cr = curv_calc_sliding_window(warped, draw_intermidiate=False)
-    a.append(left_fit)
     #left_fit, right_fit, left_fit_cr, right_fit_cr = curv_calc_from_previous(warped, left_fit, right_fit, draw_intermidiate=False)
     lines_img = add_lines_to_img(img, left_fit, right_fit, Minv, draw_intermidiate=False)
     out = measure_curvature_and_offset(lines_img, left_fit_cr, right_fit_cr, draw_intermidiate=True)
 
-b = np.array([1e4,1e1,1e-2])
-a = a*b
-#%%
-e = []
-for i in range(len(a)):
-    c = a[3,:]
-    d = a[i,:]
-    e.append(np.sum(np.abs(c-d)))
 
