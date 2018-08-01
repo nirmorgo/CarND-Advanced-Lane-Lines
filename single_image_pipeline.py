@@ -13,11 +13,10 @@ M, Minv = set_percpective_transform(img=cv2.imread('test_images/straight_lines1.
 
 #%% read all test images
 images = glob.glob('test_images/*.jpg')
-a=[]
 for img in images:
     img = cv2.imread(img)
     img = cv2.undistort(img, cal_values['mtx'], cal_values['dist'], None, cal_values['mtx'])
-    binary = color_and_grad_binary(img, b_thresh=(160,255), l_thresh=(240,255), draw_intermidiate=True)
+    binary = color_and_grad_binary(img, b_thresh=(160,255), l_thresh=(240,255), draw_intermidiate=False)
     warped = warp_image(binary, M, draw_intermidiate=False)
     warped = warped[70:,:] # mask the top part of the binary mask
     left_fit, right_fit, left_fit_cr, right_fit_cr = curv_calc_sliding_window(warped, draw_intermidiate=False)

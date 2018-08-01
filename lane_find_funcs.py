@@ -46,10 +46,10 @@ def set_percpective_transform(img=None, draw_intermidiate=True):
     # Vertices selected manually for performing a perspective transform
     img_size = (img.shape[1], img.shape[0])
     
-    top_left = [(img_size[0] // 2) - 60, img_size[1] // 2 + 100]
+    top_left = [(img_size[0] // 2) - 62, img_size[1] // 2 + 100]
     bottom_left = [(img_size[0] // 6) - 10, img_size[1]]
     bottom_right = [(img_size[0] * 5 // 6) + 60, img_size[1]]
-    top_right = [(img_size[0] // 2 + 60), img_size[1] // 2 + 100]  
+    top_right = [(img_size[0] // 2 + 62), img_size[1] // 2 + 100]  
     source = np.float32([top_left,bottom_left,bottom_right,top_right])
     # save points in format that can later be used for plotting polygon on image
     pts = np.array([top_left,bottom_left,bottom_right,top_right], np.int32)
@@ -175,12 +175,29 @@ def curv_calc_sliding_window(warped, draw_intermidiate=False):
     rightx = nonzerox[right_lane_inds]
     righty = nonzeroy[right_lane_inds]
     
-    # if we don't have enough valid pixels, we return None
-    if len(leftx) < 5 or len(rightx) < 5:
-        return [None], [None], [None], [None]
+    # if one of the line was not found (didnt have enough statistics) we use the other to compensate
+    # The assumption is: the lines are parallel, the lines will usualy have the same distance between.
+    # we can combine the data in order to improve the amount of statistics for the calculation
+    
     # Fit a second order polynomial to each using `np.polyfit`
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
+    if len(leftx) < 1500:
+        leftx = np.concatenate((leftx, rightx-625))
+        lefty = np.concatenate((lefty, righty))
+        try:
+            left_fit = np.polyfit(lefty, leftx, 2)
+        except:
+            return [None],[None],[None],[None]
+    else:
+        left_fit = np.polyfit(lefty, leftx, 2)
+    if len(righty) < 1500:
+        rightx = np.concatenate((rightx, leftx+625))
+        righty = np.concatenate((righty, lefty))
+        try:
+            right_fit = np.polyfit(righty, rightx, 2)
+        except:
+            return [None],[None],[None],[None]   
+    else:
+        right_fit = np.polyfit(righty, rightx, 2)
     
     # calculate real world dimension fit
     ym_per_pix = 30/720 # meters per pixel in y dimension
@@ -239,13 +256,30 @@ def curv_calc_from_previous(warped, left_fit, right_fit, draw_intermidiate=False
     rightx = nonzerox[right_lane_inds]
     righty = nonzeroy[right_lane_inds]
     
-    # if we don't have enough valid pixels, we return None
-    if len(leftx) < 5 or len(rightx) < 5:
-        return [None], [None], [None], [None]
-
-    # Fit new polynomials
-    left_fit = np.polyfit(lefty, leftx, 2)
-    right_fit = np.polyfit(righty, rightx, 2)
+    # if one of the line was not found (didnt have enough statistics) we use the other to compensate
+    # The assumption is: the lines are parallel, the lines will usualy have the same distance between.
+    # we can combine the data in order to improve the amount of statistics for the calculation
+    
+    # Fit a second order polynomial to each using `np.polyfit`
+    if len(leftx) < 2000:
+        leftx = np.concatenate((leftx, rightx-625))
+        lefty = np.concatenate((lefty, righty))
+        try:
+            left_fit = np.polyfit(lefty, leftx, 2)
+        except:
+            return [None],[None],[None],[None]
+    else:
+        left_fit = np.polyfit(lefty, leftx, 2)
+    
+    if len(righty) < 2000:
+        rightx = np.concatenate((rightx, leftx+625))
+        righty = np.concatenate((righty, lefty))
+        try:
+            right_fit = np.polyfit(righty, rightx, 2)
+        except:
+            return [None],[None],[None],[None]
+    else:
+        right_fit = np.polyfit(righty, rightx, 2)
     
     # calculate real world dimension fit
     ym_per_pix = 30/720 # meters per pixel in y dimension
